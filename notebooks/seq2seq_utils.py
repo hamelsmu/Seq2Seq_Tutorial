@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import dill as dpickle
 from annoy import AnnoyIndex
-from tqdm import tqdm
+from tqdm import tqdm, tqdm_notebook
 from random import random
 from nltk.translate.bleu_score import corpus_bleu
 
@@ -410,11 +410,16 @@ class Seq2Seq_Inference(object):
         """
         actual, predicted = list(), list()
         # step over the whole set
-        for issue_body, issue_title in zip(holdout_bodies, holdout_titles):
-            _, yhat = self.generate_issue_title(issue_body)
+        assert len(holdout_bodies) == len(holdout_titles)
+        num_examples = len(holdout_bodies)
 
-            actual.append(self.pp_title.process_text([issue_title])[0])
+        logging.warning('Generating predictions.')
+        for i in tqdm_notebook(range(num_examples)):
+            _, yhat = self.generate_issue_title(holdout_bodies[i])
+
+            actual.append(self.pp_title.process_text([holdout_titles[i]])[0])
             predicted.append(self.pp_title.process_text([yhat])[0])
         # calculate BLEU score
+        logging.warning('Calculating BLEU.')
         bleu = corpus_bleu(actual, predicted)
         return bleu
