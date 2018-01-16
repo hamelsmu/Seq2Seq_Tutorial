@@ -413,8 +413,8 @@ class Seq2Seq_Inference(object):
         for issue_body, issue_title in zip(holdout_bodies, holdout_titles):
             _, yhat = self.generate_issue_title(issue_body)
 
-            actual.append(self.pp_title.process_text(issue_title))
-            predicted.append(self.pp_title.process_text(yhat))
+            actual.append(self.pp_title.process_text([issue_title])[0])
+            predicted.append(self.pp_title.process_text([yhat])[0])
         # calculate BLEU score
         bleu = corpus_bleu(actual, predicted)
         return bleu
