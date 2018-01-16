@@ -413,7 +413,7 @@ class Seq2Seq_Inference(object):
         num_examples = len(holdout_bodies)
 
         logging.warning('Generating predictions.')
-        # step over the whole set
+        # step over the whole set TODO: parallelize this
         for i in tqdm_notebook(range(num_examples)):
             _, yhat = self.generate_issue_title(holdout_bodies[i])
 
