@@ -11,6 +11,7 @@ import dill as dpickle
 from annoy import AnnoyIndex
 from tqdm import tqdm
 from random import random
+from nltk.translate.bleu_score import corpus_bleu
 
 
 def load_text_processor(fname='title_pp.dpkl'):
@@ -168,11 +169,11 @@ def extract_decoder_model(model):
     -------
     A Keras model object with the following inputs and outputs:
 
-    Inputs:
-    1: the embedding index for the last predicted word, or the <Start> indicator
+    Inputs of Keras Model That Is Returned:
+    1: the embedding index for the last predicted word or the <Start> indicator
     2: the last hidden state, or in the case of the first word the hidden state from the encoder
 
-    Outputs:
+    Outputs of Keras Model That Is Returned:
     1.  Prediction (class probabilities) for the next word
     2.  The hidden state of the decoder, to be fed back into the decoder at the next time step
 
@@ -246,12 +247,11 @@ class Seq2Seq_Inference(object):
         """
         if max_len_title is None:
             max_len_title = self.default_max_len_title
-        # Seed For _start_ token
+        # get the encoder's features for the decoder
         raw_tokenized = self.pp_body.transform([raw_input_text])
         body_encoding = self.encoder_model.predict(raw_tokenized)
         # we want to save the encoder's embedding before its updated by decoder
-        #   because we can use that as an embedding for the enocder's input
-        #   (the issue body)
+        #   because we can use that as an embedding for other tasks.
         original_body_encoding = body_encoding
         state_value = np.array(self.pp_title.token2id['_start_']).reshape(1, 1)
 
@@ -289,20 +289,24 @@ class Seq2Seq_Inference(object):
         """
         Prints an example of the model's prediction for manual inspection.
         """
+        if i:
+            print('\n\n==============================================')
+            print(f'============== Example # {i} =================\n')
 
-        print('\n\n==============================================')
-        print(f'============== Example # {i} =================\n')
-        print(url)
+        if url:
+            print(url)
+
         print(f"Issue Body:\n {body_text} \n")
 
-        print(f"Original Title:\n {title_text}")
+        if title_text:
+            print(f"Original Title:\n {title_text}")
 
         emb, gen_title = self.generate_issue_title(body_text)
         print(f"\n****** Machine Generated Title (Prediction) ******:\n {gen_title}")
 
         if self.nn:
             # return neighbors and distances
-            n, d = self.nn.get_nns_by_vector(emb.flatten(), n=3,
+            n, d = self.nn.get_nns_by_vector(emb.flatten(), n=4,
                                              include_distances=True)
             neighbors = n[1:]
             dist = d[1:]
@@ -352,11 +356,25 @@ class Seq2Seq_Inference(object):
                                threshold=threshold)
 
     def prepare_recommender(self, vectorized_array, original_df):
-        raise NotImplementedError
-        # TODO: verify vectorized_array == original_df
+        """
+        Use the annoy library to build recommender
+
+        Parameters
+        ----------
+        vectorized_array : List[List[int]]
+            This is the list of list of integers that represents your corpus
+            that is fed into the seq2seq model for training.
+        original_df : pandas.DataFrame
+            This is the original dataframe that has the columns
+            ['issue_url', 'issue_title', 'body']
+
+        Returns
+        -------
+        annoy.AnnoyIndex  object (see https://github.com/spotify/annoy)
+        """
         self.rec_df = original_df
         emb = self.encoder_model.predict(x=vectorized_array,
-                                         batch_size=vectorized_array.shape[0]//100)
+                                         batch_size=vectorized_array.shape[0]//200)
 
         f = emb.shape[1]
         self.nn = AnnoyIndex(f)
@@ -364,13 +382,39 @@ class Seq2Seq_Inference(object):
         for i in tqdm(range(len(emb))):
             self.nn.add_item(i, emb[i])
         logging.warning('Building trees for similarity lookup.')
-        self.nn.build(80)
+        self.nn.build(50)
         return self.nn
 
     def set_recsys_data(self, original_df):
-        raise NotImplementedError
         self.rec_df = original_df
 
     def set_recsys_annoyobj(self, annoyobj):
-        raise NotImplementedError
         self.nn = annoyobj
+
+    def evaluate_model(self, holdout_bodies, holdout_titles):
+        """
+        Method for calculating BLEU Score.
+
+        Parameters
+        ----------
+        holdout_bodies : List[str]
+            These are the issue bodies that we want to summarize
+        holdout_titles : List[str]
+            This is the ground truth we are trying to predict --> issue titles
+
+        Returns
+        -------
+        bleu : float
+            The BLEU Score
+
+        """
+        actual, predicted = list(), list()
+        # step over the whole set
+        for issue_body, issue_title in zip(holdout_bodies, holdout_titles):
+            _, yhat = self.generate_issue_title(issue_body)
+
+            actual.append(self.pp_title.process_text(issue_title))
+            predicted.append(self.pp_title.process_text(yhat))
+        # calculate BLEU score
+        bleu = corpus_bleu(actual, predicted)
+        return bleu
