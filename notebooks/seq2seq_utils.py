@@ -409,11 +409,11 @@ class Seq2Seq_Inference(object):
 
         """
         actual, predicted = list(), list()
-        # step over the whole set
         assert len(holdout_bodies) == len(holdout_titles)
         num_examples = len(holdout_bodies)
 
         logging.warning('Generating predictions.')
+        # step over the whole set
         for i in tqdm_notebook(range(num_examples)):
             _, yhat = self.generate_issue_title(holdout_bodies[i])
 
