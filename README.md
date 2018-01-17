@@ -5,7 +5,7 @@ Code For Medium Article: ["How To Create Data Products That Are Magical And Usef
 
 ## Resources:
 
-1. [Tutorial Notebook](./notebooks/Tutorial.ipynb):  The Jupyter notebook that coincides with the Medium post.
+1. [Tutorial Notebook](https://nbviewer.jupyter.org/github/hamelsmu/Seq2Seq_Tutorial/blob/master/notebooks/Tutorial.ipynb):  The Jupyter notebook that coincides with the Medium post.
 
 2. [seq2seq_utils.py](./notebooks/seq2seq_utils.py):  convenience functions that are used in the tutorial notebook to make predictions.
 
