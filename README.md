@@ -1,7 +1,7 @@
 [![GitHub license](https://img.shields.io/github/license/hamelsmu/Seq2Seq_Tutorial.svg)](https://github.com/hamelsmu/Seq2Seq_Tutorial/blob/master/LICENSE)
 
 ## Sequence-to-Sequence Tutorial with Github Issues Data
-Code For Medium Article: ["How To Create Data Products That Are Magical And Useful Using Sequence-to-Sequence Models"]()
+Code For Medium Article: ["How To Create Data Products That Are Magical Using Sequence-to-Sequence Models"]()
 
 ## Resources:
 
