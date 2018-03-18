@@ -423,7 +423,7 @@ class Seq2Seq_Inference(object):
         logging.warning('Calculating BLEU.')
         
         #must be careful with nltk api for corpus_bleu!, 
-        # expects List[List[List[str]]] for ground truth, if you forget you will get
-        # errenous results!
+        # expects List[List[List[str]]] for ground truth, using List[List[str]] will give you
+        # erroneous results.
         bleu = corpus_bleu([[a] for a in actual], predicted)
         return bleu
